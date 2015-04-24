@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:layout_gravity="center_vertical"
+    style="@android:style/Theme.Translucent">
+
+        <ImageView
+            android:id="@+id/ibtn_handFirst"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:src="@drawable/cat_paw_orange_yellow_hand"/>
+
+        <ImageView
+            android:id="@+id/iv_finger1"
+            android:layout_width="100dp"
+            android:layout_height="80dp"
+            android:background="@android:color/transparent"
+            android:layout_alignLeft="@+id/ibtn_handFirst"
+            android:layout_alignTop="@+id/ibtn_handFirst"
+            android:layout_marginLeft="40dp"
+            android:layout_marginTop="120dp"
+            android:src="@drawable/cat_paw_finger_1"/>
+
+        <ImageView
+            android:id="@+id/iv_finger2"
+            android:layout_width="100dp"
+            android:layout_height="80dp"
+            android:background="@android:color/transparent"
+            android:layout_marginLeft="100dp"
+            android:layout_marginTop="65dp"
+            android:src="@drawable/cat_paw_finger_2"/>
+
+        <ImageView
+            android:id="@+id/iv_finger3"
+            android:layout_width="70dp"
+            android:layout_height="80dp"
+            android:background="@android:color/transparent"
+            android:layout_marginTop="65dp"
+            android:layout_marginLeft="190dp"
+            android:src="@drawable/cat_paw_finger_3"/>
+
+        <ImageView
+            android:id="@+id/iv_finger4"
+            android:layout_width="80dp"
+            android:layout_height="75dp"
+            android:background="@android:color/transparent"
+            android:layout_marginTop="135dp"
+            android:layout_marginLeft="240dp"
+            android:src="@drawable/cat_paw_finger_4"/>
+
+        <ImageView
+            android:id="@+id/iv_finger5"
+            android:layout_width="190dp"
+            android:layout_height="110dp"
+            android:background="@android:color/transparent"
+            android:layout_marginLeft="90dp"
+            android:layout_marginTop="170dp"
+            android:src="@drawable/cat_paw_finger_5"/>
+
+        <ImageView
+            android:id="@+id/iv_hair"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:focusable="false"
+            android:src="@drawable/cat_paw_orange_yellow_hair"/>
+
+
+</RelativeLayout>

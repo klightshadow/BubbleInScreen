@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">The Pet</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+
+    <!-- Setting -->
+    <string name="bluetooth">Bluretooth</string>
+    <string name="bluetoothOff">Bluetooth off</string>
+    <string name="bluetoothOn">Bluetooth on</string>
+    <string name="showDevices">Show devices</string>
+    <string name="Finish">Finish</string>
+    <string name="title_activity_hand">HandActivity</string>
+
+    <string-array name="location">
+        <item>@string/Ilan</item>
+        <item>@string/TaoyuanCity</item>
+        <item>@string/Hsinchu</item>
+        <item>@string/Miaoli</item>
+        <item>@string/Changhua</item>
+        <item>@string/Nantou</item>
+        <item>@string/Yunlin</item>
+        <item>@string/Chiayi</item>
+        <item>@string/Pingtung</item>
+        <item>@string/Hualien</item>
+        <item>@string/Penghu</item>
+        <item>@string/KeelungCity</item>
+        <item>@string/HsinchuCity</item>
+        <item>@string/ChiayiCity</item>
+        <item>@string/TaipeiCity</item>
+        <item>@string/KaohsiungCity</item>
+        <item>@string/NewTaipeiCity</item>
+        <item>@string/TaichungCity</item>
+        <item>@string/TainanCity</item>
+        <item>@string/Lienchiang</item>
+        <item>@string/Kinmen</item>
+    </string-array>
+
+    <string-array name="locationName">
+        <item>宜蘭縣</item>
+        <item>桃園市</item>
+        <item>新竹縣</item>
+        <item>苗栗縣</item>
+        <item>彰化縣</item>
+        <item>南投縣</item>
+        <item>雲林縣</item>
+        <item>嘉義縣</item>
+        <item>屏東縣</item>
+        <item>花蓮縣</item>
+        <item>澎湖縣</item>
+        <item>基隆市</item>
+        <item>新竹市</item>
+        <item>嘉義市</item>
+        <item>台北市</item>
+        <item>高雄市</item>
+        <item>新北市</item>
+        <item>台中市</item>
+        <item>台南市</item>
+        <item>連江縣</item>
+        <item>金門縣</item>
+    </string-array>
+</resources>
