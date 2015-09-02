@@ -2,11 +2,8 @@ package com.lightshadow.bubbleinscreen.views;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -15,13 +12,13 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
-import android.support.v7.app.ActionBarActivity;
-import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -38,31 +35,13 @@ import com.lightshadow.bubbleinscreen.R;
 import com.lightshadow.bubbleinscreen.adapters.DevicesAdapter;
 import com.lightshadow.bubbleinscreen.services.BluetoothChatService;
 import com.lightshadow.bubbleinscreen.services.BubbleInScreen;
-import com.lightshadow.bubbleinscreen.util.BluetoothConnection;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.UUID;
 
 
-public class MainActivity extends ActionBarActivity implements CompoundButton.OnCheckedChangeListener {
-
-    private static final boolean D = true;
-    private static final String TAG = "MainActivity";
-
-    private BluetoothAdapter bluetoothAdapter;
-    private BluetoothDevice connetDevice;
-    private Switch bluetoothSwitch;
-    private Button serviceStart, showDevices, showPairDevice, messageSend;
-    private SharedPreferences spf;
-    private DevicesAdapter deviceAdapter;
-    private ListPopupWindow listPopup;
-    private BluetoothChatService btChatServer;
-    private TextView messageShow;
+public class MainActivity extends AppCompatActivity implements CompoundButton.OnCheckedChangeListener {
 
     // Message types sent from the BluetoothChatService Handler
     public static final int MESSAGE_STATE_CHANGE = 1;
@@ -70,34 +49,116 @@ public class MainActivity extends ActionBarActivity implements CompoundButton.On
     public static final int MESSAGE_WRITE = 3;
     public static final int MESSAGE_DEVICE_NAME = 4;
     public static final int MESSAGE_TOAST = 5;
-
     // Key names received from the BluetoothChatService Handler
     public static final String DEVICE_NAME = "device_name";
     public static final String EXTRA_DEVICE_ADDRESS = "device_address";
     public static final String TOAST = "toast";
-
+    private static final boolean D = true;
+    private static final String TAG = "MainActivity";
     // Intent request codes
     private static final int REQUEST_CONNECT_DEVICE_SECURE = 1;
     private static final int REQUEST_CONNECT_DEVICE_INSECURE = 2;
     private static final int REQUEST_ENABLE_BT = 3;
-
-
     private static final String BLUETOOTH = "bluetooth";
     private static final UUID THE_UUID = UUID.fromString("e29f535e-e0c7-4af5-a01d-650a63318047");
     private static Boolean isRegister = false;
+    private BluetoothAdapter bluetoothAdapter;
+    private BluetoothDevice connetDevice;
+    private Switch bluetoothSwitch;
+    private Button serviceStart, showDevices, showPairDevice, messageSend;
+    private SharedPreferences spf;
+    private DevicesAdapter deviceAdapter;
+    private final BroadcastReceiver bluetoothReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                BluetoothDevice btDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+
+                if (btDevice.getBondState() != BluetoothDevice.BOND_BONDED) {
+                    deviceAdapter.addList(btDevice);
+                } else {
+                    connetDevice = btDevice;
+                    showPairDevice.setText(btDevice.getName() + "\n" + btDevice.getAddress());
+                    showPairDevice.setVisibility(View.VISIBLE);
+                }
+            } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
+                MainActivity.this.setProgressBarIndeterminate(false);
+                //setTitle("Select Devices");
+                if (deviceAdapter.getCount() == 0) {
+                    Toast.makeText(MainActivity.this, "No Device", Toast.LENGTH_SHORT).show();
+                }
+            } else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
+                Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+                vibrator.vibrate(1000);
+                Toast.makeText(MainActivity.this, "Disconnect", Toast.LENGTH_SHORT).show();
+            }
+
+            //Log.e("action", action);
+            //Log.e("intent", intent.toString());
+            if (BluetoothDevice.ACTION_BOND_STATE_CHANGED.equals(action)) {
+                final int state = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
+                final int prevState = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, BluetoothDevice.ERROR);
+                BluetoothDevice btDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+
+                if (state == BluetoothDevice.BOND_BONDED && prevState == BluetoothDevice.BOND_BONDING) {
+                    Toast.makeText(MainActivity.this, "Paired", Toast.LENGTH_SHORT).show();
+                    showPairDevice.setText(btDevice.getName() + "\n" + btDevice.getAddress());
+                    showPairDevice.setVisibility(View.VISIBLE);
+                } else if (state == BluetoothDevice.BOND_NONE && prevState == BluetoothDevice.BOND_BONDED) {
+                    Toast.makeText(MainActivity.this, "Unpaired", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+    };
+    private ListPopupWindow listPopup;
+    private BluetoothChatService btChatServer;
+    private TextView messageShow;
+    private final Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MESSAGE_STATE_CHANGE:
+                    if (D) Log.i(TAG, "MESSAGE_STATE_CHANGE: " + msg.arg1);
+                    switch (msg.arg1) {
+                        case BluetoothChatService.STATE_CONNECTED:
+                            break;
+                        case BluetoothChatService.STATE_CONNECTING:
+                            break;
+                        case BluetoothChatService.STATE_LISTEN:
+                        case BluetoothChatService.STATE_NONE:
+                            break;
+                    }
+                    break;
+                case MESSAGE_WRITE:
+                    break;
+                case MESSAGE_READ:
+                    byte[] readBuf = (byte[]) msg.obj;
+
+                    String readMessage = new String(readBuf, 0, msg.arg1);
+                    messageShow.setText(readMessage);
+                    break;
+                case MESSAGE_DEVICE_NAME:
+                    break;
+                case MESSAGE_TOAST:
+                    break;
+            }
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        bluetoothSwitch = (Switch)findViewById(R.id.sw_blueTooth);
-        showDevices = (Button)findViewById(R.id.btn_showDevices);
-        showPairDevice = (Button)findViewById(R.id.btn_showPairDevice);
-        serviceStart = (Button)findViewById(R.id.btn_serviceStart);
+        bluetoothSwitch = (Switch) findViewById(R.id.sw_blueTooth);
+        showDevices = (Button) findViewById(R.id.btn_showDevices);
+        showPairDevice = (Button) findViewById(R.id.btn_showPairDevice);
+        serviceStart = (Button) findViewById(R.id.btn_serviceStart);
 
-        messageSend = (Button)findViewById(R.id.btn_messageSend);
-        messageShow = (TextView)findViewById(R.id.tv_messageShow);
+        messageSend = (Button) findViewById(R.id.btn_messageSend);
+        messageShow = (TextView) findViewById(R.id.tv_messageShow);
 
         bluetoothSwitch.setOnCheckedChangeListener(this);
         listPopup = new ListPopupWindow(MainActivity.this);
@@ -106,7 +167,7 @@ public class MainActivity extends ActionBarActivity implements CompoundButton.On
         serviceStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if("Xiaomi".equals(Build.MANUFACTURER)) {
+                if ("Xiaomi".equals(Build.MANUFACTURER)) {
 
                     final AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                     builder.setTitle("小米使用者請開啟懸浮視窗設定");
@@ -169,7 +230,7 @@ public class MainActivity extends ActionBarActivity implements CompoundButton.On
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 bluetoothAdapter.cancelDiscovery();
-                BluetoothDevice selectDevice = (BluetoothDevice)deviceAdapter.getItem(position);
+                BluetoothDevice selectDevice = (BluetoothDevice) deviceAdapter.getItem(position);
                 connetDevice = selectDevice;
                 showPairDevice.setVisibility(View.VISIBLE);
                 btChatServer.connect(selectDevice, true);
@@ -220,50 +281,6 @@ public class MainActivity extends ActionBarActivity implements CompoundButton.On
 
     }
 
-    private final BroadcastReceiver bluetoothReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if(BluetoothDevice.ACTION_FOUND.equals(action)) {
-                BluetoothDevice btDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-
-                if(btDevice.getBondState() != BluetoothDevice.BOND_BONDED) {
-                    deviceAdapter.addList(btDevice);
-                } else {
-                    connetDevice = btDevice;
-                    showPairDevice.setText(btDevice.getName() + "\n" + btDevice.getAddress());
-                    showPairDevice.setVisibility(View.VISIBLE);
-                }
-            } else if(BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-                MainActivity.this.setSupportProgressBarIndeterminate(false);
-                //setTitle("Select Devices");
-                if(deviceAdapter.getCount() == 0) {
-                    Toast.makeText(MainActivity.this, "No Device", Toast.LENGTH_SHORT).show();
-                }
-            } else if(BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
-                Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
-                vibrator.vibrate(1000);
-                Toast.makeText(MainActivity.this, "Disconnect", Toast.LENGTH_SHORT).show();
-            }
-
-            //Log.e("action", action);
-            //Log.e("intent", intent.toString());
-            if(BluetoothDevice.ACTION_BOND_STATE_CHANGED.equals(action)) {
-                final int state = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
-                final int prevState = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, BluetoothDevice.ERROR);
-                BluetoothDevice btDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-
-                if (state == BluetoothDevice.BOND_BONDED && prevState == BluetoothDevice.BOND_BONDING) {
-                    Toast.makeText(MainActivity.this, "Paired", Toast.LENGTH_SHORT).show();
-                    showPairDevice.setText(btDevice.getName() + "\n" + btDevice.getAddress());
-                    showPairDevice.setVisibility(View.VISIBLE);
-                } else if (state == BluetoothDevice.BOND_NONE && prevState == BluetoothDevice.BOND_BONDED){
-                    Toast.makeText(MainActivity.this, "Unpaired", Toast.LENGTH_SHORT).show();
-                }
-            }
-        }
-    };
-
     @Override
     protected void onResume() {
         super.onResume();
@@ -272,7 +289,7 @@ public class MainActivity extends ActionBarActivity implements CompoundButton.On
 
     @Override
     protected void onDestroy() {
-        if(isRegister){
+        if (isRegister) {
             unregisterReceiver(bluetoothReceiver);
         }
         super.onDestroy();
@@ -280,8 +297,8 @@ public class MainActivity extends ActionBarActivity implements CompoundButton.On
 
     private void loadPreferences() {
         spf = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        Boolean bluetooth =  spf.getBoolean(BLUETOOTH, false);
-        if(bluetooth){
+        Boolean bluetooth = spf.getBoolean(BLUETOOTH, false);
+        if (bluetooth) {
             bluetoothSwitch.setChecked(true);
             bluetoothAdapter.enable();
             showDevices.setVisibility(View.VISIBLE);
@@ -316,9 +333,9 @@ public class MainActivity extends ActionBarActivity implements CompoundButton.On
 
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        if(buttonView == bluetoothSwitch) {
-            if(bluetoothAdapter != null) {
-                if(isChecked) {
+        if (buttonView == bluetoothSwitch) {
+            if (bluetoothAdapter != null) {
+                if (isChecked) {
                     savePreferences(BLUETOOTH, true);
                     bluetoothAdapter.enable();
 
@@ -354,40 +371,9 @@ public class MainActivity extends ActionBarActivity implements CompoundButton.On
         Intent bluetoothDiscover = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
         startActivity(bluetoothDiscover);
     }
+
     private void savePreferences(String name, boolean status) {
         spf = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        spf.edit().putBoolean(name, status).commit();
+        spf.edit().putBoolean(name, status).apply();
     }
-
-    private final Handler handler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case MESSAGE_STATE_CHANGE:
-                    if(D) Log.i(TAG, "MESSAGE_STATE_CHANGE: " + msg.arg1);
-                    switch (msg.arg1) {
-                        case BluetoothChatService.STATE_CONNECTED:
-                            break;
-                        case BluetoothChatService.STATE_CONNECTING:
-                            break;
-                        case BluetoothChatService.STATE_LISTEN:
-                        case BluetoothChatService.STATE_NONE:
-                            break;
-                    }
-                    break;
-                case MESSAGE_WRITE:
-                    break;
-                case MESSAGE_READ:
-                    byte[] readBuf = (byte[])msg.obj;
-
-                    String readMessage = new String(readBuf, 0, msg.arg1);
-                    messageShow.setText(readMessage);
-                    break;
-                case MESSAGE_DEVICE_NAME:
-                    break;
-                case MESSAGE_TOAST:
-                    break;
-            }
-        }
-    };
 }
